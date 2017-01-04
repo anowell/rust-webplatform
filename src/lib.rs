@@ -142,6 +142,42 @@ extern fn rust_caller<F: FnMut(Event)>(a: *const libc::c_void, docptr: *const li
 }
 
 impl<'a> HtmlNode<'a> {
+    pub fn element_query(&self, s: &str) -> Option<HtmlNode<'a>> {
+        let id = js! { (self.id, s) b"\
+            var value = WEBPLATFORM.rs_refs[$0].querySelector(UTF8ToString($1));\
+            if (!value) {\
+                return -1;\
+            }\
+            return WEBPLATFORM.rs_refs.push(value) - 1;\
+        \0" };
+
+        if id < 0 {
+            None
+        } else {
+            Some(HtmlNode {
+                id: id,
+                doc: self.doc,
+            })
+        }
+    }
+
+    pub fn element_query_all<'b>(&'b self, s: &str) -> Vec<HtmlNode<'a>> {
+        let start: i32 = 0;
+        let start_ptr: *const i32 = &start;
+        let start_vptr = start_ptr as *const libc::c_void;
+        let count = js! { (self.id, s, start_vptr) b"\
+            var elements = WEBPLATFORM.rs_refs[$0].querySelectorAll(UTF8ToString($1));\
+            if (elements.length == 0) {\
+                return 0;\
+            }\
+            var prev_len = WEBPLATFORM.rs_refs.length;\
+            setValue($2, prev_len, 'i32');\
+            Array.prototype.push.apply(WEBPLATFORM.rs_refs, elements);\
+            return elements.length;\
+        \0" };
+        (start..(start+count)).map(|id| HtmlNode{ id: id, doc: self.doc }).collect()
+    }
+
     pub fn tagname(&self) -> String {
         let a = js! { (self.id) b"\
             var str = WEBPLATFORM.rs_refs[$0].tagName.toLowerCase();\
