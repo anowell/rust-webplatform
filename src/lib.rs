@@ -126,7 +126,7 @@ pub struct Event<'a> {
     pub target: Option<HtmlNode<'a>>
 }
 
-extern fn rust_caller<F: FnMut(Event)>(a: *const libc::c_void, docptr: *const libc::c_void, id: i32) {
+extern fn rust_caller<'a, F: FnMut(Event<'a>)>(a: *const libc::c_void, docptr: *const libc::c_void, id: i32) {
     let v:&mut F = unsafe { mem::transmute(a) };
     v(Event {
         target: if id == -1 {
@@ -357,7 +357,7 @@ impl<'a> HtmlNode<'a> {
         \0" };
     }
 
-    pub fn on<F: FnMut(Event) + 'a>(&self, s: &str, f: F) {
+    pub fn on<F: FnMut(Event<'a>) + 'a>(&self, s: &str, f: F) {
         unsafe {
             let b = Box::new(f);
             let a = &*b as *const _;
@@ -373,7 +373,7 @@ impl<'a> HtmlNode<'a> {
         }
     }
 
-    pub fn captured_on<F: FnMut(Event) + 'a>(&self, s: &str, f: F) {
+    pub fn captured_on<F: FnMut(Event<'a>) + 'a>(&self, s: &str, f: F) {
         unsafe {
             let b = Box::new(f);
             let a = &*b as *const _;
