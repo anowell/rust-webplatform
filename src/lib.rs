@@ -86,6 +86,22 @@ impl<'a> Drop for HtmlNode<'a> {
     }
 }
 
+impl<'a> PartialEq for HtmlNode<'a> {
+    fn eq(&self, other: &HtmlNode<'a>) -> bool {
+        if self.id == other.id {
+            return true;
+        }
+
+        // Unary '+' operator convers boolean into Number (0 or 1)
+        let same = js! { (self.id, other.id) b"\
+            return +(WEBPLATFORM.rs_refs[$0].isSameNode(WEBPLATFORM.rs_refs[$1]));\
+        \0" };
+
+        same != 0
+    }
+}
+impl<'a> Eq for HtmlNode<'a> {}
+
 pub struct JSRef<'a> {
     ptr: *const HtmlNode<'a>,
 }
